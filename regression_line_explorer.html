@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Linear Regression Explorer</title>
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2E86AB 0%, #457B9D 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header .course-title {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .header .lecture-title {
+            font-size: 1.4em;
+            opacity: 0.95;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+            margin-top: 10px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .intro {
+            background: #F1FAEE;
+            border-left: 4px solid #06A77D;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .intro h2 {
+            color: #2E86AB;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+
+        .intro p {
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label {
+            display: block;
+            font-weight: 600;
+            color: #2E86AB;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 8px;
+            border-radius: 5px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #E63946;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #E63946;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider-value {
+            min-width: 80px;
+            text-align: center;
+            font-weight: 600;
+            color: #E63946;
+            font-size: 1.1em;
+            background: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #2E86AB;
+            border-radius: 4px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox input {
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .checkbox input:checked + .checkmark {
+            background: #06A77D;
+            border-color: #06A77D;
+        }
+
+        .checkbox input:checked + .checkmark::after {
+            display: block;
+        }
+
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .checkmark::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            display: none;
+        }
+
+        .mse-display {
+            background: linear-gradient(135deg, #F1FAEE 0%, #E8F5E9 100%);
+            border: 2px solid #457B9D;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .mse-display h3 {
+            color: #2E86AB;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .mse-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #E63946;
+            margin-top: 10px;
+        }
+
+        .plot-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #plot {
+            width: 100%;
+            height: 500px;
+        }
+
+        .equation {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.3em;
+            color: #2E86AB;
+            font-weight: 600;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .header .course-title {
+                font-size: 0.95em;
+            }
+
+            .header .lecture-title {
+                font-size: 1.2em;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .slider-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .slider-value {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="course-title">ENG1014 - Engineering Numerical Analysis</div>
+            <div class="lecture-title">Workshop-11 Linear Regression</div>
+            <h1>📊 Interactive Linear Regression Explorer</h1>
+            <p>Adjust the sliders to see how slope and intercept affect the regression line</p>
+        </div>
+
+        <div class="content">
+            <div class="intro">
+                <h2>Understanding the Regression Line</h2>
+                <p><strong>What you'll see:</strong> Adjust the sliders to change the slope and intercept of the regression line. Watch how the <strong>Mean Squared Error (MSE)</strong> changes as you move the line closer or farther from the data points.</p>
+                <p style="margin-top: 10px;"><strong>Key insight:</strong> The goal is to find the line that minimizes MSE - notice how the error decreases when the line passes through the center of the data cloud.</p>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label class="control-label">Slope (m)</label>
+                    <div class="slider-container">
+                        <input type="range" id="slopeSlider" class="slider" min="-5" max="5" step="0.1" value="2.0">
+                        <div class="slider-value" id="slopeValue">2.00</div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">Intercept (b)</label>
+                    <div class="slider-container">
+                        <input type="range" id="interceptSlider" class="slider" min="-5" max="10" step="0.1" value="3.0">
+                        <div class="slider-value" id="interceptValue">3.00</div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">
+                        <div class="checkbox-container">
+                            <div class="checkbox">
+                                <input type="checkbox" id="showPoints" checked>
+                                <div class="checkmark"></div>
+                            </div>
+                            <span>Show Data Points</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="mse-display">
+                    <h3>Mean Squared Error (MSE) & R²</h3>
+                    <div class="mse-value" id="mseValue">0.00</div>
+                </div>
+            </div>
+
+            <div class="plot-container">
+                <div class="equation" id="equation">y = 2.00x + 3.00</div>
+                <div id="plot"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Interactive Linear Regression Tutorial | Materials Engineering</p>
+        </div>
+    </div>
+
+    <script>
+        // Generate the same data as in the notebook (seed 42)
+        // Using a seeded random number generator that matches numpy's behavior
+        class SeededRandom {
+            constructor(seed) {
+                this.seed = seed;
+            }
+            
+            next() {
+                this.seed = (this.seed * 1664525 + 1013904223) % Math.pow(2, 32);
+                return this.seed / Math.pow(2, 32);
+            }
+            
+            // Box-Muller transform for normal distribution
+            normal(mean = 0, std = 1) {
+                const u1 = this.next();
+                const u2 = this.next();
+                const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+                return z0 * std + mean;
+            }
+        }
+
+        const rng = new SeededRandom(42);
+        
+        // Generate fixed data points (same as notebook: y = 2x + 3 + N(0, 2))
+        const xData = [];
+        const yData = [];
+        for (let i = 0; i < 20; i++) {
+            const x = (i / 19) * 10;
+            xData.push(x);
+            // y = 2x + 3 + noise where noise ~ N(0, 2)
+            const noise = rng.normal(0, 2);
+            yData.push(2 * x + 3 + noise);
+        }
+
+        // Initialize plot
+        let slope = 2.0;
+        let intercept = 3.0;
+        let showPoints = true;
+
+        function calculateMSE(slope, intercept) {
+            let sumSquaredError = 0;
+            for (let i = 0; i < xData.length; i++) {
+                const yPred = slope * xData[i] + intercept;
+                const error = yData[i] - yPred;
+                sumSquaredError += error * error;
+            }
+            return sumSquaredError / xData.length;
+        }
+
+        function calculateR2(slope, intercept) {
+            // Calculate predicted values
+            const yPred = [];
+            for (let i = 0; i < xData.length; i++) {
+                yPred.push(slope * xData[i] + intercept);
+            }
+            
+            // Calculate mean of actual values
+            const yMean = yData.reduce((a, b) => a + b, 0) / yData.length;
+            
+            // Calculate SS_res (sum of squared residuals)
+            let ssRes = 0;
+            for (let i = 0; i < yData.length; i++) {
+                ssRes += Math.pow(yData[i] - yPred[i], 2);
+            }
+            
+            // Calculate SS_tot (total sum of squares)
+            let ssTot = 0;
+            for (let i = 0; i < yData.length; i++) {
+                ssTot += Math.pow(yData[i] - yMean, 2);
+            }
+            
+            // R² = 1 - (SS_res / SS_tot)
+            return 1 - (ssRes / ssTot);
+        }
+
+        function updatePlot() {
+            // Calculate regression line
+            const xLine = [];
+            const yLine = [];
+            for (let x = 0; x <= 10; x += 0.1) {
+                xLine.push(x);
+                yLine.push(slope * x + intercept);
+            }
+
+            // Calculate MSE and R²
+            const mse = calculateMSE(slope, intercept);
+            const r2 = calculateR2(slope, intercept);
+
+            // Prepare data for Plotly
+            const traces = [];
+
+            // Error lines (red dotted lines from data points to regression line)
+            if (showPoints) {
+                for (let i = 0; i < xData.length; i++) {
+                    const yPred = slope * xData[i] + intercept;
+                    traces.push({
+                        x: [xData[i], xData[i]],
+                        y: [yData[i], yPred],
+                        mode: 'lines',
+                        type: 'scatter',
+                        name: i === 0 ? 'Error Lines' : '', // Only show in legend once
+                        showlegend: i === 0,
+                        line: {
+                            color: '#E63946',
+                            width: 2,
+                            dash: 'dot',
+                            opacity: 0.6
+                        },
+                        hoverinfo: 'skip'
+                    });
+                }
+            }
+
+            // Data points
+            if (showPoints) {
+                traces.push({
+                    x: xData,
+                    y: yData,
+                    mode: 'markers',
+                    type: 'scatter',
+                    name: 'Data Points',
+                    marker: {
+                        size: 10,
+                        color: '#2E86AB',
+                        line: {
+                            color: 'white',
+                            width: 1.5
+                        }
+                    }
+                });
+            }
+
+            // Regression line
+            traces.push({
+                x: xLine,
+                y: yLine,
+                mode: 'lines',
+                type: 'scatter',
+                name: `y = ${slope.toFixed(2)}x + ${intercept.toFixed(2)}`,
+                line: {
+                    color: '#E63946',
+                    width: 4
+                }
+            });
+
+            // Layout
+            const layout = {
+                title: {
+                    text: 'Interactive Regression Line',
+                    font: { 
+                        size: 22, 
+                        color: '#2E86AB',
+                        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        weight: 'bold'
+                    }
+                },
+                xaxis: {
+                    title: {
+                        text: 'X',
+                        font: {
+                            size: 16,
+                            color: '#2E86AB',
+                            family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                            weight: '600'
+                        }
+                    },
+                    range: [0, 10],
+                    gridcolor: 'rgba(0,0,0,0.15)',
+                    gridwidth: 1,
+                    showgrid: true,
+                    tickfont: {
+                        size: 13,
+                        color: '#333',
+                        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                    },
+                    tickcolor: '#666',
+                    tickwidth: 1,
+                    showline: true,
+                    linecolor: '#ddd',
+                    linewidth: 1,
+                    zeroline: false
+                },
+                yaxis: {
+                    title: {
+                        text: 'Y',
+                        font: {
+                            size: 16,
+                            color: '#2E86AB',
+                            family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                            weight: '600'
+                        }
+                    },
+                    range: [0, 25],
+                    gridcolor: 'rgba(0,0,0,0.15)',
+                    gridwidth: 1,
+                    showgrid: true,
+                    tickfont: {
+                        size: 13,
+                        color: '#333',
+                        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                    },
+                    tickcolor: '#666',
+                    tickwidth: 1,
+                    showline: true,
+                    linecolor: '#ddd',
+                    linewidth: 1,
+                    zeroline: false
+                },
+                plot_bgcolor: 'white',
+                paper_bgcolor: 'white',
+                font: { 
+                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', 
+                    size: 13 
+                },
+                legend: {
+                    x: 0.02,
+                    y: 0.98,
+                    bgcolor: 'rgba(255,255,255,0.95)',
+                    bordercolor: '#2E86AB',
+                    borderwidth: 2,
+                    font: {
+                        size: 13,
+                        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                    }
+                },
+                margin: { l: 70, r: 30, t: 70, b: 60 }
+            };
+
+            // Add MSE and R² annotation (moved to bottom-left to avoid legend overlap)
+            layout.annotations = [{
+                x: 0.02,
+                y: 0.02,
+                xref: 'paper',
+                yref: 'paper',
+                text: `MSE: ${mse.toFixed(2)}<br>R²: ${r2.toFixed(3)}`,
+                showarrow: false,
+                font: { 
+                    size: 15, 
+                    color: '#2E86AB',
+                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                    weight: 'bold'
+                },
+                bgcolor: '#F1FAEE',
+                bordercolor: '#457B9D',
+                borderwidth: 2,
+                borderpad: 10,
+                align: 'left'
+            }];
+
+            // Update plot
+            Plotly.newPlot('plot', traces, layout, {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToRemove: ['lasso2d', 'select2d']
+            });
+
+            // Update equation, MSE, and R² display
+            document.getElementById('equation').textContent = `y = ${slope.toFixed(2)}x + ${intercept.toFixed(2)}`;
+            document.getElementById('mseValue').innerHTML = `MSE: ${mse.toFixed(2)}<br><span style="font-size: 0.6em; color: #06A77D;">R²: ${r2.toFixed(3)}</span>`;
+        }
+
+        // Event listeners
+        document.getElementById('slopeSlider').addEventListener('input', function(e) {
+            slope = parseFloat(e.target.value);
+            document.getElementById('slopeValue').textContent = slope.toFixed(2);
+            updatePlot();
+        });
+
+        document.getElementById('interceptSlider').addEventListener('input', function(e) {
+            intercept = parseFloat(e.target.value);
+            document.getElementById('interceptValue').textContent = intercept.toFixed(2);
+            updatePlot();
+        });
+
+        document.getElementById('showPoints').addEventListener('change', function(e) {
+            showPoints = e.target.checked;
+            updatePlot();
+        });
+
+        // Initial plot
+        updatePlot();
+    </script>
+</body>
+</html>
+
